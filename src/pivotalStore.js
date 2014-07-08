@@ -1,0 +1,3 @@
+var pivotalStore = {};
+
+exports = pivotalStore;

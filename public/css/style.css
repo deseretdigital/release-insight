@@ -1,0 +1,12 @@
+body {
+  margin-top: 40px !important; }
+
+.navbar {
+  min-height: 30px;
+  height: 40px; }
+  .navbar h1 {
+    font-size: 20px;
+    margin: 8px 0; }
+    .navbar h1 a {
+      color: #fff;
+      text-decoration: none; }

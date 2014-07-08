@@ -1,0 +1,20 @@
+{
+  "name": "release-insight",
+  "main": "server.js",
+  "dependencies": {
+    "connect-flash": "^0.1.1",
+    "consolidate": "*",
+    "dustjs-helpers": "*",
+    "dustjs-linkedin": "*",
+    "express": "3.x",
+    "eyes": "^0.1.8",
+    "github": "^0.1.16",
+    "less-middleware": "*",
+    "lodash": "^2.4.1",
+    "moment": "^2.7.0",
+    "node-cache": "^1.0.0",
+    "node-sass": "0.8.6",
+    "q": "^1.0.1",
+    "request": "^2.37.0"
+  }
+}

@@ -1,0 +1,11 @@
+{>layout/}
+{<content}
+    <div class="col-md-12">
+        <h1>Please select a project:</h1>
+        <ul>
+        {#projects}
+            <li><a href="/project/{name}">{display}</a></li>
+        {/projects}
+        </ul>
+    </div>
+{/content}
