@@ -21,10 +21,15 @@ Diff.prototype.load = function(){
         base: this.baseName,
         head: this.headName
     }, function(err, res){
-        console.log("diff err " + that.repoName + " " + that.baseName + " " + that.headName);
-        inspector(err);
-        console.log("diff res");
-        inspector(res);
+        if(err)
+        {
+            console.log("diff err " + that.repoName + " " + that.baseName + " " + that.headName, err);    
+        }
+        if(res)
+        {
+            //console.log("diff res " + that.repoName + " " + that.baseName + " " + that.headName, res);
+        }
+        
         that.data = res;
         deferred.resolve(res);
     });
@@ -36,14 +41,7 @@ Diff.prototype.getStoryIds = function(){
     var parser = new StoryParser();
     var storyIds = {};
 
-    console.log("Commit Data?!");
-
-    inspector(this.data);
-
-    console.log('wut');
-
     _.forEach(this.data.commits, function(commitData){
-        console.log(".");
         var ids = parser.parse(commitData.commit.message);
 
         _.forEach(ids, function(id){

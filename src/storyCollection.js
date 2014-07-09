@@ -8,23 +8,29 @@ var StoryCollection = function(){
 };
 
 StoryCollection.prototype.store = function(story){
-    this.stories[story.getId()] = story;
+    this.stories[story.getId().toString()] = story;
 };
 
 StoryCollection.prototype.retrieve = function(storyId){
+    var that = this;
     var deferred = Q.defer();
+
+    storyId = storyId.toString();
 
     if(typeof this.stories[storyId] != 'undefined')
     {
+        console.log("Already found " + storyId);
         deferred.resolve(this.stories[storyId]);
     }
     else
     {
+        console.log("Looking up " + storyId);
         var options = pivotal.getOptions();
         options.url += '/stories/' + storyId.toString();
         request(options, function(error, response, body){
-            var story = new Story(response);
-            this.stories[story.getId()] = story;
+            console.log("Found " + storyId);
+            var story = new Story(body);
+            that.stories[story.getId()] = story;
             deferred.resolve(story);
         });
     }

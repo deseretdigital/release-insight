@@ -10,25 +10,34 @@ var express = require('express')
     , http = require('http')
     , store = new express.session.MemoryStore
     , routes = require('./routes')
-    , path = require('path');
+    , path = require('path')
+    , handlebarsHelpers = require('./src/handlebarsHelpers');
 
 var flash = require('connect-flash');
 
 var app = express();
 
+/* Template Setup */
 
-var dust = require('dustjs-linkedin')
-    , cons = require('consolidate');
+var exphbs  = require('express3-handlebars');
 
-app.engine('dust', cons.dust);
+var inspector = require('./src/inspector');
+
+app.engine('.hbs', exphbs({
+    // Specify helpers which are only registered on this instance.
+    helpers: handlebarsHelpers,
+    extname: ".hbs",
+    defaultLayout: "layout",
+    layoutsDir: "views/layouts/",
+    partialsDir: "views/partials/"
+}));
 
 
 app.configure(function(){
-    app.set('template_engine', template_engine);
     app.set('domain', domain);
     app.set('port', process.env.PORT || 8080);
     app.set('views', __dirname + '/views');
-    app.set('view engine', template_engine);
+    app.set('view engine', '.hbs');
     app.use(express.favicon());
     app.use(express.logger('dev'));
     app.use(express.bodyParser());
@@ -38,12 +47,6 @@ app.configure(function(){
     app.use(express.session());
     app.use(app.router);
     app.use(flash());
-    app.use(require('node-sass').middleware({
-        src: __dirname + '/scss',
-        dest: __dirname + '/public',
-        debug: true,
-        prefix: "/"
-    }));
     app.use(express.static(path.join(__dirname, 'public')));
 
     //middleware

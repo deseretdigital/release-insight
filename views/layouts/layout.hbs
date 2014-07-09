@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{title}} - Release Insight</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link rel="stylesheet" href="/components/fontawesome/css/font-awesome.min.css">
+    <link href="/components/pure/pure-min.css" rel="stylesheet">
+    <link href="/css/side-menu.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style type="text/css">
+        
+    </style>
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+
+<div id="layout">
+    <!-- Menu toggle -->
+    <a href="#menu" id="menuLink" class="menu-link">
+        <!-- Hamburger icon -->
+        <span></span>
+    </a>
+
+    <div id="menu">
+        <div class="pure-menu pure-menu-open">
+            <a class="pure-menu-heading" href="#">Release Insight</a>
+
+            <ul>
+                {{#each projects}}
+                    <li class="{{classes}}"><a href="/project/{{name}}">{{display}}</a></li>
+                {{/each}}
+            </ul>
+        </div>
+    </div>
+
+    <div id="main">
+        {{{body}}}
+    </div>
+</div>
+ 
+
+
+
+
+<script src="/js/ui.js"></script>
+
+<!-- Le javascript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="/components/jquery/dist/jquery.js"></script>
+<!--
+{session}
+-->
+</body>
+</html>

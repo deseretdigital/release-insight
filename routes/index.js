@@ -2,15 +2,15 @@
  * GET home page.
  */
 
-var insight = require('../src/insight');
+var insight = require('../src/insight'),
+    ProjectFormatter = require('../src/projectFormatter');
 
 
 exports.index = function(req, res){
-    var template_engine = req.app.settings.template_engine;
     res.locals.session = req.session;
 
 
-    res.render('index', { title: 'Express with '+template_engine, projects: insight.config.projects});
+    res.render('index', { title: 'Express with Handlebars', projects: insight.config.projects});
 };
 
 /*
@@ -22,12 +22,28 @@ exports.project = function(req, res){
     var template_engine = req.app.settings.template_engine;
     res.locals.session = req.session;
 
+    // Set the current class
+
+    for(var i = 0; i < insight.config.projects.length; i++)
+    {
+        if(req.params.name == insight.config.projects[i].name)
+        {
+            insight.config.projects[i].classes = 'menu-item-divided pure-menu-selected';
+        }
+        else
+        {
+            insight.config.projects[i].classes = '';
+        }
+    }
+
     insight.loadProject(req.params.name)
     .then(function(project){
-        res.render('project', { title: 'Project: ' + project.display, project: project});
+        var formatter = new ProjectFormatter(project);
+        var data = formatter.format();
+        res.render('project', { title: 'Project: ' + project.display, project: data, projects: insight.config.projects});
     })
     .fail(function(error){
         console.log(error.stack);
-        res.render('error', { title: 'Error!', error: error});
+        res.render('error', { title: 'Error!', error: error, projects: insight.config.projects});
     });
 };

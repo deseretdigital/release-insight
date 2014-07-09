@@ -31,6 +31,10 @@ var Repo = function(name){
     this.releaseBranches = [];
 };
 
+Repo.prototype.getName = function(){
+    return this.name;
+};
+
 Repo.prototype.loadPullRequests = function(){
     var deferred = Q.defer();
     var that = this;
@@ -43,10 +47,10 @@ Repo.prototype.loadPullRequests = function(){
 
         _.forEach(res, function(pullRequestData){
             var pr = new PullRequest(pullRequestData);
-            that.pullRequests.push(pr);
+            that.pullRequests.push(pr);            
         });
 
-        deferred.resolve(res);
+        deferred.resolve(res); 
     });
 
     return deferred.promise;
@@ -135,6 +139,15 @@ Repo.prototype.loadDiffs = function(){
         promises.push(currentBranch.diff.load());
     }
 
+    // Loop through all the pull requests
+    for(var i = 0; i < this.pullRequests.length; i++)
+    {
+        var pr = this.pullRequests[i];
+        console.log("Getting Pull Request ", pr);
+        this.pullRequests[i].diff = new Diff(this.name, pr.data.base.ref, pr.data.head.ref);
+        promises.push(this.pullRequests[i].diff.load());
+    }
+
     Q.allSettled(promises).then(function(){
         deferred.resolve();
     });
@@ -143,9 +156,7 @@ Repo.prototype.loadDiffs = function(){
 };
 
 Repo.prototype.parsePivotalStories = function(){
-    console.log('a');
     var storyIds = this.masterDiff.getStoryIds();
-    console.log('b');
     _.forEach(this.releaseBranches, function(branch){
         if(branch.diff)
         {

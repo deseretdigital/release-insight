@@ -1,7 +1,0 @@
-{>layout/}
-{<content}
-    <div class="col-md-12">
-        <h1>Yikes! There was an error!</h1>
-        {error}
-    </div>
-{/content}

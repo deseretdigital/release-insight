@@ -1,5 +1,6 @@
 var Story = function(data){
     this.data = data;
+    this.preload = false;
 };
 
 Story.prototype.getId = function(){

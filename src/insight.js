@@ -1,7 +1,8 @@
 var Q = require('q'),
     Project = require('./project'),
     _ = require('lodash'),
-    GitHubApi = require('github');
+    GitHubApi = require('github'),
+    moment = require('moment');
 
 var insight = {
     "config": require('./config'),
@@ -45,7 +46,11 @@ insight.loadProject = function(name){
 
     var project = new Project(projectData);
 
+
+    var start = moment();
     project.load().then(function(){
+        var end = moment();
+        console.log(end.diff(start));
         deferred.resolve(project);
     });
     

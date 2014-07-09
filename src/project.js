@@ -17,6 +17,8 @@ var Project = function(data){
 
     // Init
     this.repos = [];
+    this.storyIds = [];
+    this.stories = [];
 
     _.forEach(data, function(val, key){
         that[key] = val;
@@ -41,13 +43,12 @@ Project.prototype.load = function(){
 
     console.log("first set of promises", promises);
 
-    var fullPromise = Q.all(promises);
-    fullPromise.timeout(5000).then(function(){
+    Q.all(promises).then(function(){
         that.parseForPivotalStories();
-        console.log("story ids", that.storyIds);
-        console.log('all resolved');
+        return that.loadPivotalStoryData();
+    }).then(function(){
         deferred.resolve();
-    }, console.error);
+    });
 
     return deferred.promise;
 }
@@ -91,6 +92,7 @@ Project.prototype.preloadPivotalProjectStories = function(projectId)
         _.forEach(body, function(storyData){
             //console.log("storyData", storyData);
             var story = new Story(storyData);
+            story.preload = true;
             StoryCollection.store(story);
         });
 
@@ -103,10 +105,9 @@ Project.prototype.preloadPivotalProjectStories = function(projectId)
 
 Project.prototype.parseForPivotalStories = function(){
     var storyIds = {};
-    console.log("here!!");
     _.forEach(this.repos, function(repo){
         var ids = repo.parsePivotalStories();
-        console.log("here 2!!");
+
         _.forEach(ids, function(id){
             storyIds[id] = id;
         });
@@ -114,5 +115,30 @@ Project.prototype.parseForPivotalStories = function(){
 
     this.storyIds = storyIds;
 };
+
+Project.prototype.loadPivotalStoryData = function()
+{
+    var deferred = Q.defer();
+    var promises = [];
+    var that = this;
+
+    _.forEach(this.storyIds, function(storyId){
+        var storyPromise = StoryCollection.retrieve(storyId);
+        var promise = storyPromise.then(function(story){
+            //console.log("Story resolved " + story.getId());
+            that.stories.push(story);
+            return story;
+        });
+
+        promises.push(promise);
+    });
+
+    Q.all(promises).then(function(){
+        //console.log("Found all stories woohoo!", that.stories);
+        deferred.resolve(that.stories);
+    });
+
+    return deferred.promise;
+}
 
 module.exports = Project;
