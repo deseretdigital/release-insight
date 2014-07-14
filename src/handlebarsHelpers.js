@@ -72,6 +72,29 @@ helpers.showStory = function(storyId, options){
     
     html += '<div class="labels"><strong>Labels:</strong> ' + labels.join(', ') + '</div>';
 
+    var people = '';
+
+    _.forEach(labels, function(label){
+        if(label.substring(0,12) == 'stakeholder-')
+        {
+            if(!people)
+            {
+                people = '<div class="stakeholders">';
+            }
+
+            var handle = label.replace('stakeholder-', '');
+
+            people += '<img src="http://avatars.io/twitter/' + handle + '">';
+        }
+    });
+
+    if(people)
+    {
+        people += '</div>';
+    }
+
+    html += people;
+
     /* QA Status */
     var qaMessage = '';
     var qaClass = '';

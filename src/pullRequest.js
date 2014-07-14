@@ -2,7 +2,8 @@ var Q = require('q'),
     github = require('./githubApi'),
     StoryParser = require('./storyParser'),
     _ = require('lodash'),
-    config = require('./config');
+    config = require('./config'),
+    cache = require('./cache');
 
 var PullRequest = function(data){
     this.data = data;
@@ -18,6 +19,7 @@ PullRequest.prototype.load = function(){
     var deferred = Q.defer();
     var that = this;
 
+
     github.statuses.get({
         user: config.github.orgName,
         repo: this.data.head.repo.name,
@@ -30,6 +32,10 @@ PullRequest.prototype.load = function(){
     });
 
     return deferred.promise;
+};
+
+PullRequest.prototype.getStatusCacheKey = function(){
+    
 };
 
 PullRequest.prototype.getStoryIds = function(){

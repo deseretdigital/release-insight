@@ -11,7 +11,8 @@ var express = require('express')
     , store = new express.session.MemoryStore
     , routes = require('./routes')
     , path = require('path')
-    , handlebarsHelpers = require('./src/handlebarsHelpers');
+    , handlebarsHelpers = require('./src/handlebarsHelpers')
+    , insight = require('./src/insight');
 
 var flash = require('connect-flash');
 
@@ -76,3 +77,17 @@ app.get('/api/story/add-label', routes.apiAddLabel);
 http.createServer(app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
+
+function keepingItFresh(){
+    console.log('************** Keeping stuff Fresh *******************');
+    insight.refreshProjects().then(function(){
+        console.log('************** Refreshing Finished *******************');
+    });
+};
+
+keepingItFresh();
+
+/* Freshness Loop */
+setTimeout(function(){
+    keepingItFresh();
+}, 60 * 10 * 1000 + 5000); // every 10 minutes and 5 seconds

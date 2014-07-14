@@ -58,4 +58,20 @@ insight.loadProject = function(name){
     return deferred.promise;
 };
 
+insight.refreshProjects = function(){
+    var deferred = Q.defer();
+    var promises = [];
+
+    _.forEach(insight.config.projects, function(projectData){
+        var project = new Project(projectData);
+        promises.push(project.load());
+    });
+
+    Q.all(promises).then(function(){
+        deferred.resolve();
+    });
+
+    return deferred.promise;
+};
+
 module.exports = insight;
