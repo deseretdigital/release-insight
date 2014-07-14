@@ -71,6 +71,7 @@ app.locals.inspect = require('util').inspect;
 
 app.get('/', routes.index);
 app.get('/project/:name', routes.project);
+app.get('/api/story/add-label', routes.apiAddLabel);
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));

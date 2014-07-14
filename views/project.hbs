@@ -1,37 +1,119 @@
 <div class="header">
-            <h1>{{title}}</h1>
-            <!-- <h2>A subtitle for your page goes here</h2> -->
-        </div>
+    <h1>{{title}}</h1>
+    <h2>Last Release: </h2>
+</div>
 
-        {{#with project}}
-        <div class="content">
-            
-            {{inspect pullRequests}}
+{{#with project}}
+<div class="content">
+    <div class='pure-g'>
+        <div class="pure-u-1-2" style="padding-right:10px;">
             <h2 class="content-subhead">Open Pull Requests: {{size pullRequests}}</h2>
             <div id="pullRequests">
             {{#each pullRequests}}
                 <div class="pullRequest">
-                <h3>Branch {{@key}}</h3>
-                    {{#each branchPRs}}
+                <div class="prInside">
+                
+                <h3>{{@key}}</h3>
+                <div class="stageUrl">Stage: <a href="{{stageUrl}}" target="_blank">{{stageUrl}}</a></div>
+                    {{#each branchPullReqs}}
                     <div class="prBranch">
-                        <h4>{{repo}}: #{{number}} - {{title}}</h4>
-                        <div class="details">
-                            <div class="changes"></div>
+                        <div class="prbInside">
+                            <h4>{{repo}}: <a href="{{url}}" target="_blank">#{{number}} - {{title}}</a></h4>
+                            <div class="summary">
+                                <div class="when"><strong>Updated:</strong> {{updatedAgo}} <strong>Created:</strong> {{createdAgo}}</div>
+                                <div class="authors"><strong>Authors:</strong> {{commaList diff.authors}}</div>
+                                <div class="changes"><strong>Changes:</strong> <span class="additions">+{{diff.additions}}</span> <span class="deletions">-{{diff.deletions}}</span> | <span class="commits">{{totalCommits}} commits</span> | <span class="files">{{size diff.files}} files</span></div>
+                                <div class="viewDetails"><a href="#" class="toggle" data-toggle="details-{{repo}}-{{number}}">view details</a></div>
+                            </div>
+                            <div id="details-{{repo}}-{{number}}" class="details">
+                                <h3>Pull Request Details</h3>
+                                <h4>Commits</h4>
+                                <table class="pure-table pure-table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Hash</th>
+                                            <th>Person</th>
+                                            <th>Message</th>
+                                            <th>When</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {{#each diff.commits}}
+                                        <tr>
+                                            <td><a href="{{url}}" target="_blank">{{hash}}</a></td>
+                                            <td>{{name}}</td>
+                                            <td>{{message}}</td>
+                                            <td>{{ago}}</td>
+                                        </tr>
+                                    {{/each}}
+                                    </tbody>
+                                </table>
+                                <h4>Files Changed</h4>
+                                <ul>
+                                {{#each diff.files}}
+                                    <li>{{this}}</li>
+                                {{/each}}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="buildStatus build-{{statusState}}">
+                            <a href="{{statusUrl}}">{{statusState}}</a> - {{statusDescription}}
+                        </div>
+                    </div>
+                    {{/each}}
+                    <!-- Stories -->
+                    {{#each storyIds}}
+                        {{{showStory this where="pullRequests"}}}
+                    {{/each}}
+                </div></div>
+            {{/each}}
+            </div>
+        </div>
+        <div class="pure-u-1-2">
+            {{#with master}}
+            <h2 class="content-subhead">Stories for Release: {{size storyIds}}</h2>
+            <div class="master">
+                <div class="masterInside">
+                    <h3>Master</h3>
+                    <div class="stageUrl">Stage: <a href="{{stageUrl}}" target="_blank">{{stageUrl}}</a></div>
+                    {{#each storyIds}}
+                        {{{showStory this where="master"}}}
+                    {{/each}}
+                    <h3>Commits</h3>
+                    {{#each commits}}
+                    <div class="commitList">
+                        <div class="commitListInside">
+                        <h3>Repo: {{@key}} ({{size this}}) [<a class="toggle" data-toggle="masterCommitList_{{@key}}" href="#">view commits</a>]</h3>
+                        {{inspect this}}
+                        <ul id="masterCommitList_{{@key}}" style="display:none;">
+                        {{#each this}}
+                            <li><a href="{{html_url}}" target="_blank">{{shortenSha sha}}</a> - {{commit.author.name}}: {{commit.message}}</li>
+                        {{/each}}
+                        </ul>
                         </div>
                     </div>
                     {{/each}}
                 </div>
-            {{/each}}
             </div>
-
-            <h2 class="content-subhead">Now Let's Speak Some Latin</h2>
-            <p>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-            </p>
-
-            <h2 class="content-subhead">Try Resizing your Browser</h2>
-            <p>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-            </p>
+            {{/with}}
         </div>
-        {{/with}}
+        <div class="pure-u-1-1">
+            
+            <h2 class="content-subhead">Release History</h2>
+            {{#each releases}}
+            <div class="release">
+                <div class="releaseInside">
+                    <h3>Release: {{@key}}</h3>
+                    <!-- Stories -->
+                    {{#each storyIds}}
+                        {{{showStory this where="release"}}}
+                    {{/each}}
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    <div>
+
+    
+</div>
+{{/with}}

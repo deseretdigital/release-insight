@@ -50,7 +50,7 @@ insight.loadProject = function(name){
     var start = moment();
     project.load().then(function(){
         var end = moment();
-        console.log(end.diff(start));
+        //console.log(end.diff(start));
         deferred.resolve(project);
     });
     

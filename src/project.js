@@ -9,11 +9,15 @@ var _ = require('lodash'),
     Story = require('./story'),
     StoryCollection = require('./storyCollection'),
     util = require("util"),
-    inspector = require('./inspector');
+    inspector = require('./inspector'),
+    cache = require('./cache');
     
 
 var Project = function(data){
     var that = this;
+
+    // Save a copy of config data here
+    this.config = data;
 
     // Init
     this.repos = [];
@@ -22,7 +26,7 @@ var Project = function(data){
 
     _.forEach(data, function(val, key){
         that[key] = val;
-    })
+    });
 };
 
 Project.prototype.load = function(){
@@ -77,35 +81,50 @@ Project.prototype.preloadPivotalProjectStories = function(projectId)
 {
     var deferred = Q.defer();
 
-    var timeLimit = moment().subtract('days', 30).valueOf(); // Get in milliseconds
-
-    var options = pivotal.getOptions();
-    options.url += '/projects/' + projectId + '/stories';
-    options.qs = {
-        date_format: 'millis',
-        limit: 500,
-        updated_after: timeLimit.toString()
-    };
-
-    request(options, function(error, response, body){
-        //console.log("body", body);
-        _.forEach(body, function(storyData){
-            //console.log("storyData", storyData);
-            var story = new Story(storyData);
-            story.preload = true;
-            StoryCollection.store(story);
-        });
-
-        console.log("resolved!");
+    // Cache results
+    var cacheKey = 'preload_stories_' + projectId.toString();
+    var cacheResult = cache.get(cacheKey);
+    if(cacheResult[cacheKey])
+    {
+        console.log("PRELOAD CACHE FOUND FOR " + projectId);
         deferred.resolve();
-    });
+    }
+    else
+    {
+        var timeLimit = moment().subtract('days', 30).valueOf(); // Get in milliseconds
+
+        var options = pivotal.getOptions();
+        options.url += '/projects/' + projectId + '/stories';
+        options.qs = {
+            date_format: 'millis',
+            limit: 500,
+            updated_after: timeLimit.toString()
+        };
+
+        request(options, function(error, response, body){
+            //console.log("body", body);
+            _.forEach(body, function(storyData){
+
+                //console.log("storyData", storyData);
+                var story = new Story(storyData);
+                story.preload = true;
+                StoryCollection.store(story);
+            });
+
+            console.log("resolved!");
+            cache.set(cacheKey, 1);
+            deferred.resolve();
+        });
+    }
 
     return deferred.promise;
 };
 
 Project.prototype.parseForPivotalStories = function(){
     var storyIds = {};
+    var that = this;
     _.forEach(this.repos, function(repo){
+        console.log("Parse for pivotal stories " + repo.name);
         var ids = repo.parsePivotalStories();
 
         _.forEach(ids, function(id){

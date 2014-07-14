@@ -6,7 +6,8 @@ var Q = require('q'),
     PullRequest = require("./pullRequest"),
     Branch = require('./branch'),
     Diff = require('./diff'),
-    inspector = require('./inspector');
+    inspector = require('./inspector'),
+    StoryParser = require('./storyParser');
 
 var releaseSortAlgo = function(a, b)
 {
@@ -44,13 +45,19 @@ Repo.prototype.loadPullRequests = function(){
         repo: that.name
     }, function(err, res){
         //console.log("pull requests", res);
+        var promises = [];
 
         _.forEach(res, function(pullRequestData){
             var pr = new PullRequest(pullRequestData);
+            var promise = pr.load();
+            promises.push(promise);
             that.pullRequests.push(pr);            
         });
 
-        deferred.resolve(res); 
+        Q.all(promises).then(function(){
+            deferred.resolve(res);
+        });
+        
     });
 
     return deferred.promise;
@@ -119,6 +126,7 @@ Repo.prototype.sortReleaseBranches = function(){
 };
 
 Repo.prototype.loadDiffs = function(){
+    var that = this;
     var deferred = Q.defer();
 
     var promises = [];
@@ -143,7 +151,6 @@ Repo.prototype.loadDiffs = function(){
     for(var i = 0; i < this.pullRequests.length; i++)
     {
         var pr = this.pullRequests[i];
-        console.log("Getting Pull Request ", pr);
         this.pullRequests[i].diff = new Diff(this.name, pr.data.base.ref, pr.data.head.ref);
         promises.push(this.pullRequests[i].diff.load());
     }
@@ -152,11 +159,23 @@ Repo.prototype.loadDiffs = function(){
         deferred.resolve();
     });
 
+    /* setTimeout(function(){
+        console.log('==============================================');
+        console.log('**********************************************');
+        console.log('==============================================');
+        inspector(that.pullRequests[0].diff);
+        console.log('==============================================');
+        console.log('**********************************************');
+        console.log('==============================================');
+    }, 5000);  */
+
     return deferred.promise;
 };
 
 Repo.prototype.parsePivotalStories = function(){
+    //console.log("called in");
     var storyIds = this.masterDiff.getStoryIds();
+    var parser = new StoryParser();
     _.forEach(this.releaseBranches, function(branch){
         if(branch.diff)
         {
@@ -166,6 +185,16 @@ Repo.prototype.parsePivotalStories = function(){
             });
         }
     });
+
+    _.forEach(this.pullRequests, function(pr){
+        //console.log("Calling pr.getStoryIds");
+        var ids = pr.getStoryIds();
+        _.forEach(ids, function(id){
+            storyIds[id] = id;
+        });
+    });
+
+    
 
     return storyIds;
 };
