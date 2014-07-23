@@ -2,6 +2,7 @@
   "name": "release-insight",
   "main": "server.js",
   "dependencies": {
+    "block-timer": "^0.1.1",
     "connect-flash": "^0.1.1",
     "consolidate": "*",
     "dustjs-helpers": "*",

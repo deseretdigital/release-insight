@@ -65,7 +65,7 @@ ProjectFormatter.prototype.verifyForStory = function(promises, value){
 
     if(_int > 10000000 && _int < 100000000)
     {
-        console.log("FOUND STORY! " + _int.toString());
+        //console.log("FOUND STORY! " + _int.toString());
         promises.push(StoryCollection.retrieve(_int));
     }
     else if(_.isString(value))

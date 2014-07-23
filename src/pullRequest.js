@@ -19,7 +19,6 @@ PullRequest.prototype.load = function(){
     var deferred = Q.defer();
     var that = this;
 
-
     github.statuses.get({
         user: config.github.orgName,
         repo: this.data.head.repo.name,
@@ -35,7 +34,7 @@ PullRequest.prototype.load = function(){
 };
 
 PullRequest.prototype.getStatusCacheKey = function(){
-    
+
 };
 
 PullRequest.prototype.getStoryIds = function(){

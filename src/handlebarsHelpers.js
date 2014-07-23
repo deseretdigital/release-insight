@@ -40,7 +40,7 @@ helpers.showStory = function(storyId, options){
         return '<div class="error">Error loading Story ' + storyId.toString() + '</div>';
     }
 
-    console.log("Story before getLabels", storyId);
+    //console.log("Story before getLabels", storyId);
 
     var labels = story.getLabels();
     var storyClasses = [];

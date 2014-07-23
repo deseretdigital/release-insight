@@ -7,7 +7,8 @@ var Q = require('q'),
     Branch = require('./branch'),
     Diff = require('./diff'),
     inspector = require('./inspector'),
-    StoryParser = require('./storyParser');
+    StoryParser = require('./storyParser'),
+    cache = require('./cache');
 
 var releaseSortAlgo = function(a, b)
 {
@@ -40,27 +41,69 @@ Repo.prototype.loadPullRequests = function(){
     var deferred = Q.defer();
     var that = this;
 
-    github.pullRequests.getAll({
-        user: config.github.orgName,
-        repo: that.name
-    }, function(err, res){
-        //console.log("pull requests", res);
-        var promises = [];
+    var promises = [];
 
-        _.forEach(res, function(pullRequestData){
-            var pr = new PullRequest(pullRequestData);
-            var promise = pr.load();
+    var pullRequestsData = this.getPullRequestsCache();
+    if(pullRequestsData)
+    {
+        console.log("CACHE HIT -- loadPullRequests");
+        _.forEach(pullRequestsData, function(pullRequestData){
+            var promise = that.createPullRequest(pullRequestData);
             promises.push(promise);
-            that.pullRequests.push(pr);            
         });
 
         Q.all(promises).then(function(){
-            deferred.resolve(res);
+            deferred.resolve();
         });
-        
-    });
+    }
+    else
+    {
+        github.pullRequests.getAll({
+            user: config.github.orgName,
+            repo: that.name
+        }, function(err, res){
+            that.setPullRequestsCache(pullRequestsData);
+
+            _.forEach(res, function(pullRequestData){
+                //console.log('pullRequestData', pullRequestData);
+                var promise = that.createPullRequest(pullRequestData).then(function(){ console.log('createPullRequest resolved'); });
+                promises.push(promise);
+            });
+
+            Q.all(promises).then(function(){
+                deferred.resolve();
+            });
+        });
+    }
 
     return deferred.promise;
+};
+
+Repo.prototype.createPullRequest = function(prData){
+    var pr = new PullRequest(prData);
+    var promise = pr.load().then(function(){
+        //console.log("pull request LOADED!");
+    });
+    this.pullRequests.push(pr);  
+
+    return promise;
+};
+
+Repo.prototype.getPullRequestsCache = function(){
+    var key = this.getPullRequestsCacheKey();
+
+    var result = cache.get(key);
+    return result[key];
+};  
+
+Repo.prototype.setPullRequestsCache = function(pullRequestData){
+    var key = this.getPullRequestsCacheKey();
+
+    cache.set(key, pullRequestData);
+};
+
+Repo.prototype.getPullRequestsCacheKey = function(){
+    return 'pullRequests_' + this.name;
 };
 
 
@@ -68,23 +111,75 @@ Repo.prototype.loadBranches = function(){
     var deferred = Q.defer();
     var that = this;
 
-    github.repos.getBranches({
-        user: config.github.orgName,
-        repo: that.name
-    }, function(err, res){
-        Q.all(_.map(res, function(branchDetails){
-            var branch = new Branch(that.name, branchDetails);
-            that.branches.push(branch);
+    var promises = [];
 
-            // Returns a promise
-            return branch.load();
-        }))
-        .then(function(){
-            deferred.resolve(res);
+    console.log("loadBranches " + that.name);
+
+    var cachedData = this.getBranchesCache();
+    if(cachedData)
+    {
+        _.map(cachedData, function(branchDetails){
+            var promise = that.createBranch(branchDetails);
+            promises.push(promise);;
         });
-    });
+
+        Q.all(promises).then(function(){
+            console.log("PROMISES RESOLVED DAMN IT!")
+            deferred.resolve();
+        });
+    }
+    else
+    {
+        github.repos.getBranches({
+            user: config.github.orgName,
+            repo: that.name
+        }, function(err, res){
+            console.log("pre setBranchesCaches");
+            that.setBranchesCache(res);
+
+            _.map(res, function(branchDetails){
+                var promise = that.createBranch(branchDetails);
+                promise.then(function(){
+                    console.log("individual branch resolved");
+                });
+                promises.push(promise);
+            });
+
+            Q.all(promises).then(function(){
+                console.log("PROMISES RESOLVED DAMN IT!")
+                deferred.resolve();
+            });
+        });
+    }
 
     return deferred.promise;
+};
+
+Repo.prototype.createBranch = function(branchDetails){
+    console.log('createBranch', branchDetails);
+    var branch = new Branch(this.name, branchDetails);
+    this.branches.push(branch);
+
+    // Returns a promise
+    var promise = branch.load();
+    return promise;
+};
+
+Repo.prototype.getBranchesCache = function(){
+    var key = this.getBranchesCacheKey();
+
+    var result = cache.get(key);
+    return result[key];
+};  
+
+Repo.prototype.setBranchesCache = function(branchesData){
+    var key = this.getBranchesCacheKey();
+
+    cache.set(key, branchesData);
+};
+
+Repo.prototype.getBranchesCacheKey = function(){
+    return 'repoBranches_' + this.name;
 };
 
 Repo.prototype.load = function(){
@@ -93,8 +188,8 @@ Repo.prototype.load = function(){
 
     // Load Pull Requests and Branches
     Q.allSettled([
-        this.loadPullRequests(),
-        this.loadBranches()
+        this.loadPullRequests().then(function(){ console.log("load pull requests resolved!") }),
+        this.loadBranches().then(function(){ console.log('load Branches Resolved!'); })
     ]).then(function(){
         console.log("pre sort");
         // Sort through branch data

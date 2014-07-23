@@ -84,7 +84,6 @@
                     <div class="commitList">
                         <div class="commitListInside">
                         <h3>Repo: {{@key}} ({{size this}}) [<a class="toggle" data-toggle="masterCommitList_{{@key}}" href="#">view commits</a>]</h3>
-                        {{inspect this}}
                         <ul id="masterCommitList_{{@key}}" style="display:none;">
                         {{#each this}}
                             <li><a href="{{html_url}}" target="_blank">{{shortenSha sha}}</a> - {{commit.author.name}}: {{commit.message}}</li>

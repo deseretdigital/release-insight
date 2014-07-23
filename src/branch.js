@@ -1,7 +1,8 @@
 var Q = require('q'),
     _ = require('lodash'),
     github = require('./githubApi'),
-    config = require('./config');
+    config = require('./config'),
+    cache = require('./cache');
 
 var Branch = function(repoName, details){
     this.repoName = repoName;
@@ -13,14 +14,29 @@ Branch.prototype.load = function(){
     var deferred = Q.defer();
     var that = this;
 
-    github.repos.getBranch({
-        user: config.github.orgName,
-        repo: that.repoName,
-        branch: that.name
-    }, function(err, res){
-        that.data = res;
-        deferred.resolve(res);
-    });
+    var cacheKey = 'branchData_' + this.repoName + '_' + this.name;
+
+    var cacheData = cache.get(cacheKey)[cacheKey];
+
+    if(cacheData)
+    {
+        that.data = cacheData;
+        deferred.resolve();
+    }
+    else
+    {
+        github.repos.getBranch({
+            user: config.github.orgName,
+            repo: that.repoName,
+            branch: that.name
+        }, function(err, res){
+            that.data = res;
+            cache.set(cacheKey, res);
+            deferred.resolve(res);
+        });    
+    }
+
+    
 
     return deferred.promise;
 };
