@@ -170,7 +170,7 @@ ProjectFormatter.prototype.formatMaster = function(){
             master.storyIds[storyId] = storyId;
         });
 
-        master.commits[repo.name] = repo.masterDiff.data.commits;
+        master.commits[repo.name] = (typeof(repo.masterDiff.data) != 'undefined' ? repo.masterDiff.data.commits : {});
     });
 
     // Make sure they are loaded
