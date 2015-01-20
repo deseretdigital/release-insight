@@ -5,6 +5,7 @@ var Q = require('q'),
     config = require("./config"),
     PullRequest = require("./pullRequest"),
     Branch = require('./branch'),
+    Tag = require('./tag'),
     Diff = require('./diff'),
     inspector = require('./inspector'),
     StoryParser = require('./storyParser'),
@@ -30,7 +31,10 @@ var Repo = function(name){
     this.name = name;
     this.pullRequests = [];
     this.branches = [];
+    this.tags = [];
     this.releaseBranches = [];
+    this.releaseTags = [];
+    this.masterBranch = null;
 };
 
 Repo.prototype.getName = function(){
@@ -155,13 +159,84 @@ Repo.prototype.loadBranches = function(){
     return deferred.promise;
 };
 
+Repo.prototype.loadTags = function(){
+    var deferred = Q.defer();
+    var that = this;
+
+    var promises = [];
+
+    console.log("loadTags " + that.name);
+
+    if(this.masterBranch !== null){
+        var cachedData = this.getTagsCache();
+        if(cachedData)
+        {
+            _.map(cachedData, function(tagDetails){
+                var promise = that.createTag(tagDetails, that.masterBranch);
+                promises.push(promise);;
+            });
+
+            Q.all(promises).then(function(){
+                console.log("PROMISES RESOLVED DAMN IT!")
+                deferred.resolve();
+            });
+        }
+        else
+        {
+            github.repos.getTags({
+                user: config.github.orgName,
+                repo: that.name
+            }, function(err, res){
+                console.log("pre setTagsCaches");
+                that.setTagsCache(res);
+
+                _.map(res, function(tagDetails){
+                    var promise = that.createTag(tagDetails, that.masterBranch);
+                    promise.then(function(){
+                        console.log("individual tag resolved");
+                    });
+                    promises.push(promise);
+                });
+
+                Q.all(promises).then(function(){
+                    console.log("PROMISES RESOLVED DAMN IT!")
+                    deferred.resolve();
+                });
+            });
+        }
+    } else {
+        deferred.resolve();
+    }
+
+    return deferred.promise;
+};
+
 Repo.prototype.createBranch = function(branchDetails){
+    var that = this;
     console.log('createBranch', branchDetails);
     var branch = new Branch(this.name, branchDetails);
     this.branches.push(branch);
 
     // Returns a promise
     var promise = branch.load();
+
+    // Set masterBranch
+    promise.then(function() {
+        if(branch.data.name == 'master') {
+            that.masterBranch = branch.data; 
+        }
+    });
+
+    return promise;
+};
+
+Repo.prototype.createTag = function(tagDetails, branch){
+    console.log('createTag', tagDetails);
+    var tag = new Tag(this.name, tagDetails, branch);
+    this.tags.push(tag);
+
+    // Returns a promise
+    var promise = tag.load();
     return promise;
 };
 
@@ -170,7 +245,14 @@ Repo.prototype.getBranchesCache = function(){
 
     var result = cache.get(key);
     return result[key];
-};  
+};
+
+Repo.prototype.getTagsCache = function(){
+    var key = this.getTagsCacheKey();
+
+    var result = cache.get(key);
+    return result[key];
+};
 
 Repo.prototype.setBranchesCache = function(branchesData){
     var key = this.getBranchesCacheKey();
@@ -178,8 +260,18 @@ Repo.prototype.setBranchesCache = function(branchesData){
     cache.set(key, branchesData);
 };
 
+Repo.prototype.setTagsCache = function(tagsData){
+    var key = this.getTagsCacheKey();
+
+    cache.set(key, tagsData);
+};
+
 Repo.prototype.getBranchesCacheKey = function(){
     return 'repoBranches_' + this.name;
+};
+
+Repo.prototype.getTagsCacheKey = function(){
+    return 'repoTags_' + this.name;
 };
 
 Repo.prototype.load = function(){
@@ -187,15 +279,25 @@ Repo.prototype.load = function(){
     var that = this;
 
     // Load Pull Requests and Branches
-    Q.allSettled([
+    Q.all([
         this.loadPullRequests().then(function(){ console.log("load pull requests resolved!") }),
         this.loadBranches().then(function(){ console.log('load Branches Resolved!'); })
     ]).then(function(){
-        console.log("pre sort");
+        console.log("pre sort branches");
+
         // Sort through branch data
         that.sortReleaseBranches();
-        
-        console.log("post sort");
+        console.log("post sort branches");
+    }).then(function(){
+        console.log('loading tags');
+        return that.loadTags().then(function(){ console.log('tags loaded'); });
+    }).then(function(){
+        console.log("pre sort tags");
+
+        // Sort through tag data
+        that.sortReleaseTags();
+        console.log("post sort tags");
+    }).then(function(){
         // Get Diff Data
         return that.loadDiffs();
     }).then(function(){
@@ -220,6 +322,20 @@ Repo.prototype.sortReleaseBranches = function(){
     that.releaseBranches = that.releaseBranches.sort(releaseSortAlgo).reverse();
 };
 
+Repo.prototype.sortReleaseTags = function(){
+    var that = this;
+
+    _.forEach(this.tags, function(tag){
+        if(tag.isRelease())
+        {
+            that.releaseTags.push(tag);
+        }
+    });
+
+    // Sort and reverse
+    that.releaseTags = that.releaseTags.sort(releaseSortAlgo).reverse();
+};
+
 Repo.prototype.loadDiffs = function(){
     var that = this;
     var deferred = Q.defer();
@@ -229,8 +345,15 @@ Repo.prototype.loadDiffs = function(){
     console.log("loadDiffs called")
 
     // Load Master to latest release diff
-    this.masterDiff = new Diff(this.name, this.releaseBranches[0].name, 'master');
-    promises.push(this.masterDiff.load());
+    if(typeof(this.releaseBranches) != 'undefined' && this.releaseBranches.length > 0){
+        this.masterDiff = new Diff(this.name, this.releaseBranches[0].name, 'master');
+        promises.push(this.masterDiff.load());
+    } else if(typeof(this.releaseTags) != 'undefined' && this.releaseTags.length > 0) {
+        //console.log('QQQQQQQQQQQQQQQQQQQQQQQQQ', this.name, this.releaseTags[0]);
+        this.masterDiff = new Diff(this.name, this.releaseTags[0].details.commit.sha, 'master');
+    } else {
+        this.masterDiff = new Diff(this.name, 'master', 'master');
+    }
 
     // Loop through all but the last release branch
     for(var i = 0; i < this.releaseBranches.length - 1; i++)
@@ -250,7 +373,7 @@ Repo.prototype.loadDiffs = function(){
         promises.push(this.pullRequests[i].diff.load());
     }
 
-    Q.allSettled(promises).then(function(){
+    Q.all(promises).then(function(){
         deferred.resolve();
     });
 

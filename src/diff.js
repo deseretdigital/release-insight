@@ -55,13 +55,15 @@ Diff.prototype.getStoryIds = function(){
     var parser = new StoryParser();
     var storyIds = {};
 
-    _.forEach(this.data.commits, function(commitData){
-        var ids = parser.parse(commitData.commit.message);
+    if(typeof(this.data) != 'undefined'){
+        _.forEach(this.data.commits, function(commitData){
+            var ids = parser.parse(commitData.commit.message);
 
-        _.forEach(ids, function(id){
-            storyIds[id] = id;
+            _.forEach(ids, function(id){
+                storyIds[id] = id;
+            });
         });
-    });
+    }
 
     return storyIds;
 };
